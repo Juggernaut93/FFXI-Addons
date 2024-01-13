@@ -89,7 +89,8 @@ local default = {
     ignore_items = { 'linkshell', 'linkpearl' },
     ignore_across = { 'remedy', 'echo drops', 'holy water', 'eye drops', 'prism powder', 'silent oil', },
     ignore_players = {''},
-    accounts  = {}
+    accounts = {},
+	move_items = true
 }
 
 local settings = config.load(default)
@@ -104,9 +105,14 @@ function preferences()
     
     player_only = true
     filter_by_player = true
+	
+    move_items = settings.move_items or false
 end
 
 bags = S{'safe','safe2','storage','locker','inventory','satchel','sack','case','wardrobe','wardrobe2','wardrobe3','wardrobe4','wardrobe5','wardrobe6','wardrobe7','wardrobe8'}
+
+inv_str_to_id = {["inventory"]=0, ["safe"]=1, ["storage"]=2, ["locker"]=3, ["temp"]=4, ["satchel"]=5, ["sack"]=6, ["case"]=7, ["wardrobe"]=8}
+inv_id_to_str = {[0]="inventory", "safe", "storage", "locker", "temp", "satchel", "sack", "case", "wardrobe"}
 
 -------------------------------------------------------------------------------------------------------------
 preferences()
@@ -131,6 +137,33 @@ function CanSendPol(id) return S(res.items[id].flags):contains('Can Send POL') e
 function IsRare(id) return S(res.items[id].flags):contains('Rare') end
 function IsExclusive(id) return S(res.items[id].flags):contains('Exclusive') or S(res.items[id].flags):contains('No PC Trade') end
 function IsStackable(id) return res.items[id].stack > 1 end
+
+function do_move()
+    -- it should never happen, but let's be safe
+    if table.length(to_move) == 0 then
+        return
+    end
+    local bag, slot, count, iname = unpack(to_move[1])
+    
+    -- do stuff
+    log("moving "..count.." "..iname.." to "..inv_id_to_str[bag])
+    windower.ffxi.put_item(bag, slot, count)
+    --log(bag, slot, count, iname)
+    
+    table.remove(to_move, 1)
+    if table.length(to_move) > 0 then
+        coroutine.schedule(do_move, 2)
+    end
+end
+
+function find_item_in_bag(inv, id)
+    for _, item in ipairs(inv) do
+        if item.id == id then
+            return item.slot
+        end
+    end
+    return nil
+end
 
 function work(...)
     args = {...}    
@@ -218,19 +251,44 @@ function work(...)
         end
     end
 
+    to_move = {}
+    personal_inv = {}
+    if move_items then
+        personal_inv = windower.ffxi.get_items(inv_str_to_id["inventory"])
+    end
+    
     --print duplicates
     for id,locations in pairs(haystack) do
         if table.length(locations) > 1 then
             results = results +1
             log(res.items[id].name,'found in:')
+            local extra_bags = {}
+            local amt_to_move = 0
+            local can_move = false
             for location,count in pairs(locations) do
                 log('\t',location,count)
+                if move_items then
+                    if location == 'inventory' then
+                        can_move = true
+                        amt_to_move = count
+                    else
+                        extra_bags[#extra_bags+1] = location
+                    end
+                end
+            end
+            if can_move then
+                -- find item in inventory
+                to_move[#to_move+1] = {inv_str_to_id[extra_bags[1]], find_item_in_bag(personal_inv, id), amt_to_move, res.items[id].name}
+                can_move = false
             end
         end
     end
     
     if results >= 1 then
         log(results,'found.')
+        if move_items and table.length(to_move) > 0 then
+            do_move()
+        end
     else
         log('No duplicates found. Congratulations!')
     end
