@@ -90,7 +90,7 @@ local default = {
     ignore_across = { 'remedy', 'echo drops', 'holy water', 'eye drops', 'prism powder', 'silent oil', },
     ignore_players = {''},
     accounts = {},
-	move_items = true
+    move_items = true
 }
 
 local settings = config.load(default)
