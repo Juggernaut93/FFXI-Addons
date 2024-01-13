@@ -111,8 +111,8 @@ end
 
 bags = S{'safe','safe2','storage','locker','inventory','satchel','sack','case','wardrobe','wardrobe2','wardrobe3','wardrobe4','wardrobe5','wardrobe6','wardrobe7','wardrobe8'}
 
-inv_str_to_id = {["inventory"]=0, ["safe"]=1, ["storage"]=2, ["locker"]=3, ["temp"]=4, ["satchel"]=5, ["sack"]=6, ["case"]=7, ["wardrobe"]=8}
-inv_id_to_str = {[0]="inventory", "safe", "storage", "locker", "temp", "satchel", "sack", "case", "wardrobe"}
+inv_str_to_id = {["inventory"] = 0, ["safe"] = 1, ["storage"] = 2, ["temp"] = 3, ["locker"] = 4, ["satchel"] = 5, ["sack"] = 6, ["case"] = 7, ["wardrobe"] = 8, ["safe2"] = 9, ["wardrobe2"] = 10, ["wardrobe3"] = 11, ["wardrobe4"] = 12, ["wardrobe5"] = 13, ["wardrobe6"] = 14, ["wardrobe7"] = 15, ["wardrobe8"] = 16, ["recycle"] = 17}
+inv_id_to_str = {[0]="inventory", "safe", "storage", "temp", "locker", "satchel", "sack", "case", "wardrobe", "safe2", "wardrobe2", "wardrobe3", "wardrobe4", "wardrobe5", "wardrobe6", "wardrobe7", "wardrobe8", "recycle"}
 
 -------------------------------------------------------------------------------------------------------------
 preferences()
