@@ -146,15 +146,9 @@ function do_move()
     local bag, slot, count, iname = unpack(to_move[1])
     
     -- do stuff
-    if count > 12 then
-        windower.ffxi.put_item(bag, slot, 12)
-        to_move[1][3] = to_move[1][3] - 12
-        log("moving 12 "..iname.." to "..inv_id_to_str[bag])
-    else
-        windower.ffxi.put_item(bag, slot, count)
-        table.remove(to_move, 1)
-        log("moving "..count.." "..iname.." to "..inv_id_to_str[bag])
-    end
+    log("moving "..count.." "..iname.." to "..inv_id_to_str[bag])
+    windower.ffxi.put_item(bag, slot, count)
+    table.remove(to_move, 1)
     --log(bag, slot, count, iname)
     
     if table.length(to_move) > 0 then
@@ -163,12 +157,13 @@ function do_move()
 end
 
 function find_item_in_bag(inv, id)
+    slots = {}
     for _, item in ipairs(inv) do
         if item.id == id then
-            return item.slot
+            slots[item.slot] = item.count
         end
     end
-    return nil
+    return slots
 end
 
 function work(...)
@@ -284,7 +279,10 @@ function work(...)
             end
             if can_move then
                 -- find item in inventory
-                to_move[#to_move+1] = {inv_str_to_id[extra_bags[1]], find_item_in_bag(personal_inv, id), amt_to_move, res.items[id].name}
+                slots_counts = find_item_in_bag(personal_inv, id)
+                for slot, item_cnt in pairs(slots_counts) do
+                    to_move[#to_move+1] = {inv_str_to_id[extra_bags[1]], slot, item_cnt, res.items[id].name}
+                end
                 can_move = false
             end
         end
