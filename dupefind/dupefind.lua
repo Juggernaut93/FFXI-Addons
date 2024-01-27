@@ -146,11 +146,17 @@ function do_move()
     local bag, slot, count, iname = unpack(to_move[1])
     
     -- do stuff
-    log("moving "..count.." "..iname.." to "..inv_id_to_str[bag])
-    windower.ffxi.put_item(bag, slot, count)
+    if count > 12 then
+        windower.ffxi.put_item(bag, slot, 12)
+        to_move[1][3] = to_move[1][3] - 12
+        log("moving 12 "..iname.." to "..inv_id_to_str[bag])
+    else
+        windower.ffxi.put_item(bag, slot, count)
+        table.remove(to_move, 1)
+        log("moving "..count.." "..iname.." to "..inv_id_to_str[bag])
+    end
     --log(bag, slot, count, iname)
     
-    table.remove(to_move, 1)
     if table.length(to_move) > 0 then
         coroutine.schedule(do_move, 2)
     end
