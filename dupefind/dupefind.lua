@@ -138,6 +138,11 @@ function IsRare(id) return S(res.items[id].flags):contains('Rare') end
 function IsExclusive(id) return S(res.items[id].flags):contains('Exclusive') or S(res.items[id].flags):contains('No PC Trade') end
 function IsStackable(id) return res.items[id].stack > 1 end
 
+
+function stack()
+    windower.send_command('stack')  -- requires Itemizer on
+end
+
 function do_move()
     -- it should never happen, but let's be safe
     if table.length(to_move) == 0 then
@@ -153,6 +158,8 @@ function do_move()
     
     if table.length(to_move) > 0 then
         coroutine.schedule(do_move, 2)
+    else
+        coroutine.schedule(stack, 2)
     end
 end
 
