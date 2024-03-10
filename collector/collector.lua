@@ -1,6 +1,6 @@
 _addon.name = 'Collector'
 _addon.author = 'Lili'
-_addon.version = '0.1.5'
+_addon.version = '0.2.0'
 _addon.commands = {'collection','collection','col'}
 
 require('chat')
@@ -10,6 +10,7 @@ require('tables')
 local slips = require('slips')
 local res_items = require('resources').items
 local key_items = require('resources').key_items
+local extdata = require('extdata')
 
 local collections = require('collections') 
 
@@ -23,21 +24,23 @@ sorted_bags = L{'safe', 'safe2', 'storage', 'locker',
                 'wardrobe5', 'wardrobe6', 'wardrobe7','wardrobe8', 
                 'slip 01', 'slip 02', 'slip 03', 'slip 04', 'slip 05', 'slip 06', 'slip 07', 'slip 08', 'slip 09', 'slip 10', 
                 'slip 11', 'slip 12', 'slip 13', 'slip 14', 'slip 15', 'slip 16', 'slip 17', 'slip 18', 'slip 19', 'slip 20', 
-                'slip 21', 'slip 22', 'slip 23', 'slip 24', 'slip 25', 'slip 26', 'slip 27', 'slip 28', 
-                'key items', }
+                'slip 21', 'slip 22', 'slip 23', 'slip 24', 'slip 25', 'slip 26', 'slip 27', 'slip 28', 'slip 29', 'slip 30',
+                'slip 31', 'key items', }
 
-function add_result(result,bag,count)
+
+function add_result(result,bag,count,augments)
     local count = count > 1 and ' ('..count..')' or ''
-    return (bag == 'missing' and result:color(259) or result:color(258)) .. count
+    local rank = augments ~= nil and augments.rank ~= nil and ' (Rank: %s)':format(augments.rank) or ''
+    return (bag == 'missing' and result:color(259) or result:color(258)) .. count .. rank
 end
 
-function curate_collection(collection, name, results, bag, count)
+function curate_collection(collection, name, results, bag, count, augments)
     local count = count or 1
     if collection:contains(name) then
         if not results[bag] then
             results[bag] = L{}
         end
-        results[bag]:append(add_result(name,bag,count))
+        results[bag]:append(add_result(name, bag, count, augments))
         local m = results.missing:find(name)
         if m then
             results.missing:remove(m)
@@ -47,64 +50,58 @@ function curate_collection(collection, name, results, bag, count)
 end
 
 function curate(set)
-    
     local collection = L(collections[set])
     local inventory = windower.ffxi.get_items()
-
-    local results = T{
-                missing = collection:copy(),
-                owned = L{},
-            }
-    
+    local results = T{ missing = collection:copy(), owned = L{}, }
+            
 	for _, bag in ipairs(bags) do 
 		for i = 1, inventory[bag].max do
 			data = inventory[bag][i]
 			if data.id ~= 0 then
                 local name = res_items[data.id].name
-                curate_collection(collection, name, results, bag, data.count)
+                local ext = extdata.decode(data)
+                curate_collection(collection, name, results, bag, data.count, ext)
 			end
         end
     end
 
-    -- local slip_storages = slips.get_player_items()
-    -- for _, slip_id in ipairs(slips.storages) do
-        -- local slip_name = 'slip '..tostring(slips.get_slip_number_by_id(slip_id)):lpad('0', 2)
-        -- for _, id in ipairs(slip_storages[slip_id]) do
-            -- local name = res_items[id].name
-            -- curate_collection(collection, name, results, slip_name)            
-        -- end
-    -- end
+    local slip_storages = slips.get_player_items()
+    for _, slip_id in ipairs(slips.storages) do
+        local slip_name = 'slip '..tostring(slips.get_slip_number_by_id(slip_id)):lpad('0', 2)
+        for _, id in ipairs(slip_storages[slip_id]) do
+            local name = res_items[id].name
+            curate_collection(collection, name, results, slip_name)            
+        end
+    end
     
     for _, id in ipairs(windower.ffxi.get_key_items()) do
         local name = key_items[id].name
         curate_collection(collection, name, results, 'key items')
     end
     
-    --table.vprint(results)
-    
     log('Results:')
     for i=#results.missing,1,-1 do
         local name = results.missing[i]
-        local item = res_items:with('name',name) or key_items:with('name',name)
+        local item = res_items:with('name', name) or key_items:with('name', name)
         if not item then
-            log('invalid item:',name:color(123)..'.','Check the spelling!')
+            log('invalid item:', name:color(123)..'.', 'Check the spelling!')
             results.missing:remove(i)
         else
-            log('missing:',name:color(259))
+            log('missing:', name:color(259))
         end
     end
 
     for _,bag in ipairs(sorted_bags) do 
         if results[bag] then
             for _,item in ipairs(results[bag]) do
-                log('%s: %s':format(bag,item))
+                log('%s: %s':format(bag, item))
             end
         end
     end
     
-    log(set..':\n',results.owned.n,'owned /',results.missing.n,'missing')
+    log(set..':\n', results.owned.n, 'owned /', results.missing.n, 'missing')
     if results.owned.n + results.missing.n > #collection then
-        log(' ' .. #collection,'unique items in the set.')
+        log(' ' .. #collection, 'unique items in the set.')
     end
 end
 
@@ -165,11 +162,7 @@ windower.register_event('addon command', function(...)
         end
         
         log('Usage:\n//col <collection name>\nAvailable collections:')
-        for k,v in pairs(collections) do
-            if #v > 1 then 
-                log('\t',k)
-            end
-        end
+        table.print(collections:keyset())
     end
 end)
 
